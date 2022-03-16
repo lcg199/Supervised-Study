@@ -1,0 +1,254 @@
+---
+title: "proj"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+Will 'gen-z' ever be able to afford a house? Tracking housing prices and income levels to predict whether buying a house is an attainable goal for gen z. 
+
+The impetus behind this study is to observe whether buying a house remains an attainable goal for those born between 1997-2012, referencing the trajectory of housing prices and income levels. By focusing on income, this study hopes to explore whether rises in house prices are relative to rises in income, assuming that there is an inherent connection between the two, as a rise in income is somewhat necessary to be able to purchase and keep up with rising house prices. Therefore, the underlying hypothesis of this study would be that due to the asymmetric rise in housing prices, relative to income levels, that 'gen z' are less likely to be able to afford a house at the average age that previous generations may have.
+
+Although a lot of research already exists that details the plight of first-time buyers and the growing age at which people are purchasing their first houses, much of this is a few years old, thus this study has the purpose of updating the literature and making it more current.
+
+To address some of the key words established in the research question, this study will use Jiram et. als (2016) definition of affordability, which places emphasis on attaining a standard of housing at a price that doesn't place too large of a burden on occupiers. Because this definition doesn't include the relationship between affordability and income, this study will also incorporate Whitehead's (1991) definition of affordability as being in reference to the level of income being spent on housing expenses.
+
+Overall, this study aims to explore further this idea that the younger generations are being excluded from the housing market, exploring whether perhaps there exists a societal change occurring in which renting becomes the new 'norm' for 'gen z'.
+
+Aims:
+By using previous data concerning housing prices and income levels in the United Kingdom, this study aims to build a model detailing both the direction of housing prices and income. By building this model of predictions, this study aims to forecast whether earnings will increase adequately alongside housing prices, therefore providing a conclusion of whether 'gen z' can realistically purchase a house of their own.
+
+Using this data, this study aims to map housing prices and income levels and to use this model to predict the changes in both over time and to reveal areas that are perhaps more conducive to first time house buyers. By including data that details certain demographic features of participants, this study aims to investigate the impact of educational level and occupation have on 'gen z's' progression towards buying a house.
+
+Primarily the aim of this study is to detail the relationship between housing prices and income levels, and the asymmetric increase between the two, to determine whether this asymmetry means 'gen z' are less likely to be able to realistically afford to purchase a property at the average age those in the previous generation would have done so.
+
+Research questions:
+1. How can past data concerning housing prices and income predict whether the typical member of 'gen z' will be able to purchase a house?
+
+2. Are housing prices rising equally with changes in income level?
+
+3. Are certain areas more conducive for first-time buyers?
+
+4. Does attaining a certain level of education or being within certain occupational sectors make it more likely for a member of 'gen z' to afford a property?
+
+Data:
+The data detailing the house price averages per region was collected by the Office for National Statistics to produce the UK Housing Price Index for 2021 (see reference list for download location). This data details the average house price of four different residential house types, whilst tracking the change monthly and annually of the prices of such properties. 
+
+The dataset concerning first time buyers a separate survey carried out under the bracket of the Housing Price Index datasets. This section of the data collected concerns first time buyers and former owners/occupiers. 
+
+The income datasets were each from the UK data service. For this study the multiple publications of the Annual Population Survey Two-Year Longitudinal Dataset was used, including data from 2017 up to 2020. This data detailed average weekly income and various other occupation related variables. 
+
+Methods:
+To begin, some descriptive statistics will be run in r to show the average house price and average income, as these are the two central variables in this study. Additionally, because housing prices differ across the United Kingdom, a map will be produced to show these differing prices, in order to determine which areas are perhaps the most affordable for first-time buyers.
+
+The first regression analysis that will be run is a polynomial regression to explore the relationship between age and income, controlling for occupation and educational level. As the generally observed trend between age and income is non-linear, as income tends to rise then fall as we age, polynomial regression will be used. Using this form of regression, we can also predict the rise of income over time. By controlling for occupation and education, this study can also determine the impact both variables may have on the level of income a person will receive.
+
+The second regression model will concern the first-time buyer’s index, age and each of the different indexes representing each different residential type. The residential types are as listed: detached, semi-detached, terraced and flats. This model will show the relationship between housing price indices and the frequency of first-time buyers, whilst also highlighting the role age has in this interaction.
+
+```{r setup}
+knitr::opts_chunk$set(cache =TRUE)
+```
+
+```{r pressure, echo=FALSE}
+library(tinytex)
+library(usethis)
+#all data can be downloaded from here
+usethis::use_course('https://github.com/lcg199/Supervised-Study/archive/refs/heads/main.zip')
+data <- read.csv(url('https://github.com/lcg199/Supervised-Study/archive/refs/heads/main.zip'))
+
+#inputting the data which details first time buyer frequency, the average house price per area, and the income levels from 2017 to 2020
+first_time_buyers <- read.csv("first_time_buyers.csv")
+
+average_house_prices <- read.csv('Average-prices-Property-Type-2021-11.csv')
+
+#data including the average house price per region (regardless of residential type) and the latitude and longitude 
+lat_long_price <- read.csv('lat_long_price.csv')
+
+#income data 
+income2017_18 <- read_dta("income2017-18.dta")
+
+income2018_19 <- read_dta("income2018-19.dta")
+
+income2019_20 <- read_dta("income2019-20.dta")
+
+```
+
+Descriptive statistics:
+```{r, include=TRUE, results= 'hide', message=FALSE}
+log.detached.price <- log(Detached_Average_Price)
+hist(log.detached.price, main ='Histogram detailing the (log)average price of a detached house')
+
+log.sd.price <- log(Semi_Detached_Average_Price)
+hist(log.sd.price, main = 'Histogram detailing the (log)average price of a semi-detached house')
+
+log.terraced.price <- log(Terraced_Average_Price)
+hist(log.terraced.price, main = 'Histogram detailing the (log)average price of a terraced house')
+
+log.flat.price <- log(Flat_Average_Price)
+hist(log.flat.price, main = 'Histogram detailing the (log)average price of a flat')
+
+
+```
+The histograms detailing each of the different residential types average price show a normal distribution. 
+
+
+
+
+
+```{r, include=TRUE, results= 'hide', message=FALSE}
+#creating a map to show how house prices differ per region 
+sf.longlatprice <- st_as_sf(x=lat_long_price, coords=c('Lat','Long'), crs='+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0')
+mapview(sf.longlatprice, cex ='average_house_price', legend=NULL)
+```
+The map showing regional differences in average house prices shows the Isle of Wight as being the most expensive, suggesting that it may be one of the most difficult places for gen z to be able to afford their first property. On the opposite end of the scale are more northerly regions, with Blanaeu Gwent, in Northern Wales, having the most affordable average house price. Tentative conclusions can be made that suggest that perhaps the north provides a more conducive housing market for gen z. This conclusion supports the trends in wider literature, with Drake (1995) reporting of definitive regional differences in housing prices with these differences appearing sharper between north and south. 
+
+
+Results: 
+Before the regressions were conducted, some data clean-up was necessary to make the different datasets the same length in order to carry out these analytical techniques. 
+
+```{r, include=TRUE, results= 'hide', message=FALSE}
+
+#making data the same length 
+average_house_prices_cond <- average_house_prices%>%slice(-c(
+48801:128518))
+
+first_time_buyers_cond <- first_time_buyers%>%slice(-c(48801:48829))
+
+income2017_2018_cond <- income2017_18 %>%slice(-c(48801:65651))
+income2018_19_cond <- income2018_19 %>% slice(-c(48801:61933))
+income2019_20_cond <- income2019_20%>%slice(-c(48801:56018))
+
+#removing the old datasets to keep the environment tidy
+rm(first_time_buyers, income2017_18, income2018_19, income2019_20,
+average_house_prices)
+
+#attaching the revised datasets
+attach(average_house_prices_cond)
+attach(first_time_buyers_cond)
+attach(income2017_2018_cond)
+attach(income2018_19_cond)
+attach(income2019_20_cond)
+
+#making the variables the same length 
+length(AGE1)<-48800
+length(Flat_Index)<-48800
+length(Detached_Index)<- 48800
+length(Semi_Detached_Index)<-48800
+length(Terraced_Index)<-48800
+length(First_Time_Buyer_Index)<-48800
+length(GRSSWK1)<-48800
+
+#removing missing variables 
+income2017_2018_cond[income2017_2018_cond==-8]<- NA
+income2017_2018_cond[income2017_2018_cond==-9]<- NA
+income2018_19_cond[income2018_19_cond==-9]<-NA
+income2018_19_cond[income2018_19_cond==-8]<-NA
+income2019_20_cond[income2019_20_cond==-9]<-NA
+income2019_20_cond[income2019_20_cond==-8]<-NA
+na.omit(income2017_2018_cond)
+na.omit(income2018_19_cond)
+na.omit(income2019_20_cond)
+na.omit(average_house_prices_cond)
+na.omit(first_time_buyers_cond)
+
+```
+
+```{r, include=TRUE, results= 'hide', message=FALSE}
+
+test <- lm(log.weekly.income~AGE1, income2017_2018_cond)
+summary(test)
+test2 <- lm(log.weekly.income~poly(AGE1, 5, raw=TRUE)+ INDE07M1 + CURED81, data = income2017_2018_cond)
+summary(test2)
+anova(test, test2)
+```
+To ensure that a polynomial regression was the best fit to track the relationship between age and income, two regression models were created, one being a simple linear regression model and the other being a polynomial regression, with age acting as the polynomial variable. By comparing the two models through the running of Anova, we can see that the simple linear model isn’t statistically significant, however, the polynomial regression model is. Therefore, this result proves that polynomial regression provides a more accurate fit. 
+
+```{r, echo=FALSE}
+#regression between age, income, level of education, and industy sector
+options(scipen = 999)
+
+test2 <- lm(GRSSWK1~poly(AGE1, 5, raw=TRUE)+ INDE07M1 + CURED81, data = income2017_2018_cond)
+summary(test2)
+
+test3 <- lm(GRSSWK1~poly(AGE1, 5, raw=TRUE)+ INDE07M1 + CURED81, data = income2018_19_cond)
+summary(test3)
+
+test4 <- lm(GRSSWK1~poly(AGE1, 5, raw=TRUE)+ INDE07M1 + CURED81, data = income2019_20_cond)
+summary(test4)
+```
+Having ensured that the type of regression is accurate, regressions were then run with data detailing individuals’ age and their gross weekly pay using data collected in 2017-18, 2018-19 and 2019-20. Two other variables, detailing occupational sector and level of education, were also included in the regression, to determine how such variables affect the relationship between age and gross weekly pay. 
+
+In the model ‘test2’, which included data only collected in 2017-18, 32.6% of the variance in the population was accounted for. The regression results were largely significant, with only the education variable being not statistically significant, with the counter-intuitive suggestion that higher education produces lower weekly pay. Furthermore, a significant suggestion is made in his model that highlights that differences in occupational groups create dramatic differences in gross hourly wage that a person may earn. Looking specifically at age and its relationship with income, the model seems to suggest that those younger have the lowest income, with income peaking when age is squared and then declining as a person’s age gets progressively older.  
+
+However, the residual deviance of this model is very high suggesting that perhaps the model is not entirely the best fit for predicting this relationship. This is the case across all three regression models. 
+
+For tests 3 and four, which use data collected in 2018-19 and 2019-20 respectively, most of the same residuals are statistically significant and suggest the same general trend as portrayed in test 2. One interesting point of difference lies in test 3, where the education variable becomes statistically significant to the 95 per cent degree. However, with the negative coefficient produced, this would seemingly suggest that higher educational levels contributes to a lower weekly income, which seems contradictory to the wider literature.
+```{r, echo=FALSE}
+#second regression model tracking the first time buyers index, age and each of the residential type indexes 
+first_buyers <- lm(First_Time_Buyer_Index~poly(AGE1,5,raw=TRUE)+Detached_Index + Semi_Detached_Index + Terraced_Index + Flat_Index, y = TRUE, x=TRUE)
+summary(first_buyers)
+```
+The second set of regression models included the index of first-time buyers, exploring the relationship between this variable, age and each of the separate types of housing index. With this model, the residual standard error and r squared suggest a better fit when compared to the previous, as the r squared value suggests that 61% of the variance in the population was accounted for. Interestingly, age becomes not statistically significant in this model, perhaps indicating that there is not a strong enough association between age and first-time buyers. However, the indexes of each residential types are highly significant, suggesting that the first-time buyer index increase with both the detached and terraced housing and decreases with the semi-detached housing and flat indexes. This provides an indication that perhaps first-time buyers are most frequently purchasing either detached or terraced housing, driving the indexes for both these residential types higher. 
+
+
+```{r, echo=FALSE}
+
+#plotting predicted first_buyers values 
+coeff= coefficients(first_buyers)
+eq=paste0('y=', round(coeff[2],1), '*x', round(coeff[1],1))
+plot(first_buyers, main= eq, cex=0.1)
+
+```
+This graph shows a very interesting picture, as the y value is close to being horizontal, it would appear that  the model is not revealing any obvious trends between first time buyers and the indexes of each of the different residential types. However, with the points being so close to this line, this could suggest otherwise. Overall, not much can be determined from this graph, except that the model needs tweaking to help explain the interaction between these variables. 
+
+```{r, echo=FALSE}
+
+plot(first_buyers, main= eq, cex=0.1)
+
+#plotting test2 values
+coeff2 = coefficients(test2)
+eq2=paste0('y=', round(coeff2[2],1), '*x', round(coeff2[1],1))
+
+plot(test2, main = eq2)
+
+#plotting test3
+coeff3 = coefficients(test3)
+eq3=paste0('y=', round(coeff3[2],1), '*x', round(coeff3[1],1))
+
+plot(test3, main = eq3)
+
+#plotting test4
+coeff4 = coefficients(test4)
+eq4=paste0('y=', round(coeff4[2],1), '*x', round(coeff4[1],1))
+
+plot(test4, main = eq4)
+
+```
+Looking exclusively at the graphs plotting the standardised residuals of each of the 3 regression models, tracking age and weekly income, the regression line shows a positive relationship. This suggests that age and wage increase linearly. However, the slight dip in the line towards the end of the graph, may be indicative of the assumption that past a certain age, income starts to decline. 
+
+Conclusion: 
+To conclude, this study hoped to track the effect of age and income on individuals’ ability to afford their first property, by examining whether those on a lower income were indeed less likely to be able to afford their first step onto the housing ladder. McKee (2012, p854) offered the insight that the young were being excluded from the housing market, with homeownership in lower age groups halving since 1980, reaching just 7% in 2007. This study has a wider social connection, with additional studies suggesting that what is reflected in the decline of younger houseowners is an increase in people residing longer in their family households (ibid). With longer durations of education, rising debt levels and harsher restrictions on welfare benefits, gen z have had a change in household formation thrust upon them (ibid). In reference to the Help to Buy scheme, this study and others would indicate that although it may be a step in the right direction, it doesn’t provide the supply needed to keep up with the demand and to push down the house prices (Hilber, 2013, p1).  
+
+To continue this research, it would be interesting to create much more complex regression models and graphics, perhaps even widening out the range of data to include a longer time series and including variables that may explain the cause of regional price differences.  
+
+
+
+References:
+Drake, L. 'Testing for convergence between UK regional house prices' (1992) Regional Studies 29:4, 357-366
+
+Hilber, C. 'Help to Buy will likely have the effect of pushing up house prices further, making housing become less- not more- affordable for young would-be-owners' (2013)
+Accessed on 05/03/2022 http://blogs.lse.ac.uk/politicsandpolicy/help-to-buy-help-to-who/ 
+
+Jiram, W., Bujang, A., Zarin, H., Anuar, F. 'Empirical evaluation of Gen Y housing affordability'(2016)Knowledge, Service, Tourism & Hospitality: Proceedings of the Annual International Conference on Management and Technology in Knowledge, Service, Tourism & Hospitality 2015 p155-160
+
+McKee, K. 'Young people, homeownership and future welfare' Housing Studies 27:6 (2012)853-862
+
+UK House Price Index: HM Land Registry (published 2022)
+First Time Buyer and Former Owner Occupier data Average price by property price 
+http://publicdata.landregistry.gov.uk/market-trend-data/house-price-index-data/First-Time-Buyer-Former-Owner-Occupied-2021-12.csv?utm_medium=GOV.UK&utm_source=datadownload&utm_campaign=FTNFOO&utm_term=9.30_16_02_22
+
+Annual Population Survey, Office for National Statistics (2017-18),(2018-19),(2019-20)
+https://beta.ukdataservice.ac.uk/datacatalogue/studies/study?id=8839 - 2017-18
+https://beta.ukdataservice.ac.uk/datacatalogue/studies/study?id=8840 -2018-19
+https://beta.ukdataservice.ac.uk/datacatalogue/studies/study?id=8888 - 2019-20 
